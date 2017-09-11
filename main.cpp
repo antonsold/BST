@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iterator>
 #include <deque>
+
 using namespace std;
 
 template<typename T>
@@ -16,11 +17,11 @@ private:
     Node* root;
 public:
     BSTree(){root= nullptr; minptr=nullptr; maxptr=nullptr;} //default constructor
-    inline bool empty(){return root == nullptr;};
+    inline bool empty() {return root == nullptr;};
     void insert(T);
     Node* minptr; //pointer to minimum
     Node* maxptr; //pointer to maximum
-    Node* find(T);
+    Node* find(T) const;
     static Node* succ(Node*); //successor
     static Node* pred(Node*); //predecessor
     class tree_iterator: public std::random_access_iterator_tag{
@@ -31,12 +32,20 @@ public:
     public:
         tree_iterator(): pos(0){};
         explicit tree_iterator(Node* _ptr);
-        tree_iterator(const tree_iterator& it): ptr(it.ptr), visited(it.visited), pos(it.pos){};
+        tree_iterator(const tree_iterator& it): ptr(it.ptr), visited(it.visited), pos(it.pos){}; //copy constructor
         tree_iterator&operator=(const tree_iterator&);
-        T operator*();
-        tree_iterator&operator++();
-        tree_iterator&operator--();
+        Node* operator*();
+        tree_iterator&operator++(); //pre-increment
+        tree_iterator&operator--(); //pre-decrement
+        tree_iterator operator++(int); //post-increment
+        tree_iterator operator--(int); //post-decrement
+        bool operator==(const tree_iterator&) const;
+        bool operator!=(const tree_iterator&) const;
+        bool operator<(const tree_iterator&) const;
+        bool operator>(const tree_iterator&) const;
     };
+    tree_iterator begin();
+    tree_iterator end();
 };
 
 
@@ -65,12 +74,12 @@ void BSTree<T>::insert(T value) {
     BSTree<T>::Node *ptr = my_insert(this->root, nullptr, value);
     if (minptr == nullptr || ptr->key < minptr->key)
         minptr = ptr;
-    if (maxptr == nullptr || ptr->key > maxptr->key)
+    if (maxptr == nullptr || maxptr->key < ptr->key)
         maxptr = ptr;
 }
 
 template <typename T>
-typename BSTree<T>::Node* BSTree<T>::find(T value) {
+typename BSTree<T>::Node* BSTree<T>::find(T value) const{
     BSTree<T>::Node *ptr = root;
     while(ptr != nullptr && ptr->key != value){
         if (ptr->key < value)
@@ -105,6 +114,7 @@ typename BSTree<T>::Node* BSTree<T>::pred(Node* ptr){
     return ptr;
 }
 
+
 template <typename T>
 BSTree<T>::tree_iterator::tree_iterator(BSTree::Node *_ptr): ptr(_ptr), pos(0) {
     visited.push_back(_ptr);
@@ -119,8 +129,8 @@ typename BSTree<T>::tree_iterator& BSTree<T>::tree_iterator::operator=(const BST
 }
 
 template <typename T>
-T BSTree<T>::tree_iterator::operator*() {
-    return ptr->key;
+typename BSTree<T>::Node* BSTree<T>::tree_iterator::operator*() {
+    return ptr;
 }
 
 template <typename T>
@@ -150,6 +160,67 @@ typename BSTree<T>::tree_iterator &BSTree<T>::tree_iterator::operator--() {
     return *this;
 }
 
+template <typename T>
+typename BSTree<T>::tree_iterator BSTree<T>::tree_iterator::operator++(int not_used) {
+    BSTree<T>::tree_iterator tmp(*this);
+    ++(*this);
+    return tmp;
+}
+
+template <typename T>
+typename BSTree<T>::tree_iterator BSTree<T>::tree_iterator::operator--(int not_used) {
+    BSTree<T>::tree_iterator tmp(*this);
+    --(*this);
+    return tmp;
+}
+
+template <typename T>
+bool BSTree<T>::tree_iterator::operator==(const BSTree::tree_iterator &it) const{
+    if (this->ptr == nullptr || it.ptr == nullptr)
+        return this->ptr == it.ptr;
+    else
+        return this->ptr->key == it.ptr->key;
+}
+
+template <typename T>
+bool BSTree<T>::tree_iterator::operator!=(const BSTree::tree_iterator &it) const{
+    if (this->ptr == nullptr || it.ptr == nullptr)
+        return this->ptr != it.ptr;
+    else
+        return this->ptr->key == it.ptr->key;
+}
+
+template <typename T>
+bool BSTree<T>::tree_iterator::operator>(const BSTree::tree_iterator &it) const{
+    if (this->ptr == nullptr)
+        return true;
+    else if (it.ptr == nullptr)
+        return false;
+    else
+        return this->ptr->key > it.ptr->key;
+}
+
+template <typename T>
+bool BSTree<T>::tree_iterator::operator<(const BSTree::tree_iterator &it) const{
+    if (this->ptr == nullptr)
+        return false;
+    else if (it.ptr == nullptr)
+        return true;
+    else
+        return this->ptr->key < it.ptr->key;
+}
+
+template <typename T>
+typename BSTree<T>::tree_iterator BSTree<T>::begin() {
+    BSTree<T>::tree_iterator it(minptr);
+    return tree_iterator(minptr);
+}
+
+template <typename T>
+typename BSTree<T>::tree_iterator BSTree<T>::end() {
+    return tree_iterator(nullptr);
+}
+
 int main() {
     BSTree<int> t;
     t.insert(5);
@@ -157,5 +228,8 @@ int main() {
     t.insert(10);
     t.insert(0);
     t.insert(11);
+    t.insert(-5);
+    for (BSTree<int>::tree_iterator it = t.begin(); it != t.end(); ++it)
+        cout << (*it)->key << endl;
     return 0;
 }
