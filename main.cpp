@@ -13,7 +13,8 @@ private:
         Node* right;
         Node* parent;
     };
-    Node* my_insert(Node*&, Node*, T); //helper function for insert()
+    Node* my_insert(Node*&, Node*, T); //helper recursive function for insert()
+    int in_order_helper(Node*&); //helper recursive function for in-order traversal, returns tree height
     Node* root;
 public:
     BSTree(){root= nullptr; minptr=nullptr; maxptr=nullptr;} //default constructor
@@ -24,6 +25,7 @@ public:
     Node* find(T) const;
     static Node* succ(Node*); //successor
     static Node* pred(Node*); //predecessor
+    int in_order(); //in-order traversal
     class tree_iterator: public std::random_access_iterator_tag{
     private:
         Node* ptr;
@@ -39,7 +41,7 @@ public:
         tree_iterator&operator--(); //pre-decrement
         tree_iterator operator++(int); //post-increment
         tree_iterator operator--(int); //post-decrement
-        bool operator==(const tree_iterator&) const;
+        bool operator==(const tree_iterator&) const; //comparisons
         bool operator!=(const tree_iterator&) const;
         bool operator<(const tree_iterator&) const;
         bool operator>(const tree_iterator&) const;
@@ -62,7 +64,7 @@ typename BSTree<T>::Node* BSTree<T>::my_insert(BSTree<T>::Node* &tree, BSTree<T>
     else {
         if (value == tree->key)
             return nullptr;
-        if (value < tree->key)
+        else if (value < tree->key)
             return my_insert(tree->left, tree, value);
         else
             return my_insert(tree->right, tree, value);
@@ -70,12 +72,35 @@ typename BSTree<T>::Node* BSTree<T>::my_insert(BSTree<T>::Node* &tree, BSTree<T>
 }
 
 template<typename T>
+int BSTree<T>::in_order_helper(BSTree<T>::Node *&tree) {
+
+    int l, r;
+    if(tree != nullptr){
+
+        l = in_order_helper(tree->left);
+        //do something with root here;
+        r = in_order_helper(tree->right);
+    }
+    else
+        return 0;
+    return max(l, r) + 1;
+}
+
+template<typename T>
+int BSTree<T>::in_order() {
+    return in_order_helper(root);
+}
+
+
+template<typename T>
 void BSTree<T>::insert(T value) {
     BSTree<T>::Node *ptr = my_insert(this->root, nullptr, value);
-    if (minptr == nullptr || ptr->key < minptr->key)
-        minptr = ptr;
-    if (maxptr == nullptr || maxptr->key < ptr->key)
-        maxptr = ptr;
+    if (ptr != nullptr) {
+        if (minptr == nullptr || ptr->key < minptr->key)
+            minptr = ptr;
+        if (maxptr == nullptr || maxptr->key < ptr->key)
+            maxptr = ptr;
+    }
 }
 
 template <typename T>
@@ -222,14 +247,13 @@ typename BSTree<T>::tree_iterator BSTree<T>::end() {
 }
 
 int main() {
+    int x;
     BSTree<int> t;
-    t.insert(5);
-    t.insert(4);
-    t.insert(10);
-    t.insert(0);
-    t.insert(11);
-    t.insert(-5);
-    for (BSTree<int>::tree_iterator it = t.begin(); it != t.end(); ++it)
-        cout << (*it)->key << endl;
+    cin >> x;
+    while(x != 0){
+        t.insert(x);
+        cin >> x;
+    }
+    cout << t.in_order();
     return 0;
 }
