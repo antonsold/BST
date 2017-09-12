@@ -4,7 +4,7 @@
 
 using namespace std;
 
-template<typename T, class C = less<T> >
+template<typename T = int, class C = less<T> >
 class BSTree{
 private:
     struct Node{
@@ -16,8 +16,9 @@ private:
     Node* my_insert(Node*&, Node*, T); //helper recursive function for insert()
     int in_order_helper(Node*&); //helper recursive function for in-order traversal, returns tree height
     int pre_order_helper(Node*&); //helper recursive function for pre-order traversal, returns number of elements
-    Node* tree_min(Node*&);
-    Node* tree_max(Node*&);
+    pair<int, bool> post_order_helper(Node*&); //helper recursive function for post-order traversal, returns pair (height, balanced(0/1))
+    static Node* tree_min(Node*&);
+    static Node* tree_max(Node*&);
     Node* root;
     C cmp;
 public:
@@ -27,11 +28,12 @@ public:
     Node* minptr; //pointer to minimum
     Node* maxptr; //pointer to maximum
     Node* find(T) const;
-    Node* succ(Node*); //successor
-    Node* pred(Node*); //predecessor
+    static Node* succ(Node*); //successor
+    static Node* pred(Node*); //predecessor
     int in_order(); //in-order traversal
     int pre_order(); //pre-order traversal
-    class tree_iterator: public std::random_access_iterator_tag{
+    bool is_balanced(); //post-order traversal
+    class tree_iterator: public std::bidirectional_iterator_tag{
     private:
         Node* ptr;
         deque<Node*> visited;
@@ -103,6 +105,23 @@ int BSTree<T, C>::pre_order_helper(BSTree<T, C>::Node *&tree) {
 }
 
 template<typename T, class C>
+pair<int, bool> BSTree<T, C>::post_order_helper(BSTree<T, C>::Node *&tree) {
+    pair<int, bool> l, r;
+    bool balanced;
+    int height;
+    if(tree != nullptr){
+        l = post_order_helper(tree->left);
+        r = post_order_helper(tree->right);
+        //do something with root here;
+        balanced = !(!l.second || !r.second || l.first - r.first > 1 || l.first - r.first < -1);
+        height = max(l.first, r.first) + 1;
+        return make_pair(height, balanced);
+    }
+    else
+        return make_pair(0, true);
+}
+
+template<typename T, class C>
 int BSTree<T, C>::in_order() {
     return in_order_helper(root);
 }
@@ -110,6 +129,11 @@ int BSTree<T, C>::in_order() {
 template<typename T, class C>
 int BSTree<T, C>::pre_order() {
     return pre_order_helper(root);
+}
+
+template<typename T, class C>
+bool BSTree<T, C>::is_balanced(){
+    return post_order_helper(root).second;
 }
 
 template<typename T, class C>
@@ -140,7 +164,7 @@ typename BSTree<T, C>::Node* BSTree<T, C>::succ(Node *ptr) {
     if(ptr->right != nullptr)
         ptr = tree_min(ptr->right);
     else{
-        while(ptr->parent != nullptr && cmp(ptr->parent->key, ptr->key))
+        while(ptr->parent != nullptr && ptr->parent->right == ptr)
             ptr = ptr->parent;
         ptr = ptr->parent;
     }
@@ -152,7 +176,7 @@ typename BSTree<T, C>::Node* BSTree<T, C>::pred(Node* ptr){
     if (ptr->left != nullptr)
         ptr = tree_max(ptr->left);
     else{
-        while(ptr->parent != nullptr && cmp(ptr->key, ptr->parent->key))
+        while(ptr->parent != nullptr && ptr == ptr->parent->left)
             ptr = ptr->parent;
         ptr = ptr->parent;
     }
@@ -284,12 +308,15 @@ typename BSTree<T, C>::Node* BSTree<T, C>::tree_min(BSTree<T, C>::Node *&tree) {
 
 int main() {
     int x;
-    BSTree<int> t;
+    BSTree<> t;
     cin >> x;
     while(x != 0){
         t.insert(x);
         cin >> x;
     }
-    cout << t.pred(t.maxptr)->key;
+    if(t.is_balanced())
+        cout << "YES";
+    else
+        cout << "NO";
     return 0;
 }
